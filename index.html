@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso | SOS Docs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #0F5E9B; /* Azul SOS Docs */
+            --primary-hover: #0a4a7a;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --bg-light: #f1f5f9;
+            --card-bg: #ffffff;
+            --radius: 24px;
+            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
+            padding: 20px;
+        }
+
+        /* Card Principal */
+        .auth-container {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 420px;
+            padding: 50px 40px;
+            border-radius: var(--radius);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo {
+            display: block;
+            max-width: 160px;
+            margin: 0 auto 30px;
+        }
+
+        /* Alternância de Telas */
+        .auth-content {
+            position: relative;
+            min-height: 320px;
+        }
+
+        .form-box {
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        /* Esconder/Mostrar Forms */
+        .hidden {
+            position: absolute;
+            top: 0;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(20px);
+        }
+
+        .active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Estilo dos Inputs */
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .form-group {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .form-group i {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 16px 16px 16px 50px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            background-color: #f8fafc;
+            font-size: 15px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(15, 94, 155, 0.1);
+        }
+
+        /* Botões */
+        .btn-main {
+            width: 100%;
+            padding: 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: var(--transition);
+        }
+
+        .btn-main:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-main:active {
+            transform: translateY(0);
+        }
+
+        /* Link de Troca */
+        .switch-form {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .switch-form a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .switch-form a:hover {
+            text-decoration: underline;
+        }
+
+        /* Erro Mensagem */
+        .error-msg {
+            color: #ef4444;
+            font-size: 12px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <img src="https://sosdocs.com.br/wp-content/uploads/2025/01/logo-sos-docs-azul.svg" alt="SOS Docs" class="logo">
+
+        <div class="auth-content">
+            
+            <div id="login-box" class="form-box active">
+                <h1>Bem-vindo de volta</h1>
+                <p>Acesse sua conta para continuar</p>
+                
+                <form onsubmit="handleAuth(event, 'login')">
+                    <div class="form-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="login-user" placeholder="Usuário" required>
+                    </div>
+                    <div class="form-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="login-pass" placeholder="Senha" required>
+                    </div>
+                    <button type="submit" class="btn-main">Entrar no Sistema</button>
+                </form>
+                
+                <div class="switch-form">
+                    Não tem uma conta? <a onclick="toggleForm('signup')">Cadastre-se</a>
+                </div>
+            </div>
+
+            <div id="signup-box" class="form-box hidden">
+                <h1>Criar sua conta</h1>
+                <p>Preencha os dados para começar</p>
+                
+                <form onsubmit="handleAuth(event, 'signup')">
+                    <div class="form-group">
+                        <i class="fas fa-user-tag"></i>
+                        <input type="text" id="signup-name" placeholder="Seu nome completo" required>
+                    </div>
+                    <div class="form-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="signup-pass" placeholder="Crie uma senha" required>
+                    </div>
+                    <button type="submit" class="btn-main">Criar conta agora</button>
+                </form>
+                
+                <div class="switch-form">
+                    Já é cadastrado? <a onclick="toggleForm('login')">Fazer login</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Função para alternar entre Login e Cadastro
+        function toggleForm(formType) {
+            const loginBox = document.getElementById('login-box');
+            const signupBox = document.getElementById('signup-box');
+
+            if (formType === 'signup') {
+                loginBox.classList.remove('active');
+                loginBox.classList.add('hidden');
+                
+                signupBox.classList.remove('hidden');
+                signupBox.classList.add('active');
+            } else {
+                signupBox.classList.remove('active');
+                signupBox.classList.add('hidden');
+                
+                loginBox.classList.remove('hidden');
+                loginBox.classList.add('active');
+            }
+        }
+
+        // Função para simular a autenticação
+        function handleAuth(event, type) {
+            event.preventDefault();
+            
+            const btn = event.target.querySelector('button');
+            const originalText = btn.innerText;
+            
+            btn.innerText = "Processando...";
+            btn.disabled = true;
+            btn.style.opacity = "0.7";
+
+            setTimeout(() => {
+                if (type === 'login') {
+                    alert('Login realizado com sucesso! Redirecionando...');
+                } else {
+                    alert('Conta criada com sucesso! Bem-vindo à SOS Docs.');
+                }
+                window.location.href = "dashboard.html";
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
