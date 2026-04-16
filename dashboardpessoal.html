@@ -13,7 +13,7 @@
 
     <style>
         :root {
-            --primary: #0F5E9B; /* Azul SOS Docs */
+            --primary: #0F5E9B;
             --secondary: #f8fafc;
             --text-dark: #1e293b;
             --text-light: #64748b;
@@ -21,13 +21,59 @@
             --warning: #f59e0b;
             --white: #ffffff;
             --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --sidebar-width: 260px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: #f1f5f9; color: var(--text-dark); min-height: 100vh; overflow-x: hidden; }
 
-        body { background-color: #f1f5f9; color: var(--text-dark); min-height: 100vh; }
+        /* --- SIDEBAR / MENU HAMBURGUER --- */
+        .sidebar {
+            position: fixed;
+            left: calc(-1 * var(--sidebar-width));
+            top: 0;
+            width: var(--sidebar-width);
+            height: 100%;
+            background: var(--primary);
+            color: white;
+            transition: 0.3s ease;
+            z-index: 1000;
+            padding-top: 60px;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+        }
 
-        /* Header */
+        .sidebar.active { left: 0; }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: 0.2s;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar-link:hover, .sidebar-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: white;
+        }
+
+        .sidebar-link i { margin-right: 15px; width: 20px; text-align: center; }
+
+        /* Overlay para fechar o menu ao clicar fora */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            z-index: 999;
+        }
+        .overlay.active { display: block; }
+
+        /* --- HEADER --- */
         header {
             background-color: var(--white);
             padding: 1rem 5%;
@@ -40,13 +86,21 @@
             z-index: 100;
         }
 
-        .logo-area img { height: 40px; }
+        .menu-btn {
+            font-size: 1.5rem;
+            color: var(--primary);
+            cursor: pointer;
+            margin-right: 20px;
+        }
+
+        .logo-area { display: flex; align-items: center; }
+        .logo-area img { height: 35px; }
+
         .user-info { font-weight: 600; color: var(--primary); }
 
-        /* Main Content */
+        /* --- CONTEÚDO --- */
         main { padding: 2rem 5%; max-width: 1200px; margin: 0 auto; }
 
-        /* Card Destaque (Total de Horas) */
         .summary-card {
             background: linear-gradient(135deg, var(--primary), #1e40af);
             color: var(--white);
@@ -60,7 +114,6 @@
         .summary-card h2 { font-size: 1rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
         .total-hours { font-size: 3.5rem; font-weight: 700; margin-top: 0.5rem; }
 
-        /* Filtros e Controles */
         .controls {
             display: flex;
             justify-content: space-between;
@@ -86,9 +139,7 @@
         .btn:hover { background: #f8fafc; border-color: var(--primary); }
         .btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
 
-        /* Lista de Registros */
         .records-list { display: grid; gap: 1rem; }
-
         .record-item {
             background: var(--white);
             padding: 1.2rem;
@@ -122,10 +173,8 @@
         .status-badge.compensado { background: #d1fae5; color: #065f46; }
         .status-badge.a-compensar { background: #fef3c7; color: #92400e; }
 
-        /* Loading e Empty State */
         .loading { text-align: center; padding: 3rem; color: var(--text-light); }
 
-        /* Responsividade */
         @media (max-width: 768px) {
             .record-item { grid-template-columns: 1fr 1fr; gap: 10px; }
             .date-col, .status-badge { grid-column: span 1; }
@@ -136,8 +185,22 @@
 </head>
 <body>
 
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-link active">
+            <i class="fas fa-chart-line"></i> Banco Geral
+        </div>
+        <a href="#" class="sidebar-link">
+            <i class="fas fa-plus-circle"></i> Adicionar Hora Extra
+        </a>
+        <a href="#" class="sidebar-link" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Sair
+        </a>
+    </div>
+
     <header>
         <div class="logo-area">
+            <i class="fas fa-bars menu-btn" onclick="toggleMenu()"></i>
             <img src="https://sosdocs.com.br/wp-content/uploads/2025/01/logo-sos-docs-azul.svg" alt="SOS Docs">
         </div>
         <div class="user-info" id="userDisplayName">
@@ -161,13 +224,11 @@
         </section>
 
         <div id="loading" class="loading">Carregando registros...</div>
-        
-        <div class="records-list" id="recordsContainer">
-            </div>
+        <div class="records-list" id="recordsContainer"></div>
     </main>
 
     <script>
-        // 1. CONFIGURAÇÃO FIREBASE (Substitua pelos seus dados)
+        // 1. CONFIGURAÇÃO FIREBASE
         const firebaseConfig = {
             apiKey: "SUA_API_KEY",
             authDomain: "SEU_PROJETO.firebaseapp.com",
@@ -177,18 +238,26 @@
             appId: "SEU_APP_ID"
         };
 
-        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // 2. VARIÁVEIS GLOBAIS
         const currentUser = localStorage.getItem("usuario");
+        if (!currentUser) {
+            window.location.href = "login.html";
+        }
 
-if (!currentUser) {
-    alert("Usuário não logado");
-    window.location.href = "login.html";
-}
         let allRecords = [];
+
+        // 2. FUNÇÕES DO MENU
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+
+        function logout() {
+            localStorage.removeItem("usuario");
+            window.location.href = "login.html";
+        }
 
         // 3. INICIALIZAÇÃO
         document.addEventListener("DOMContentLoaded", () => {
@@ -196,38 +265,38 @@ if (!currentUser) {
             fetchRecords();
         });
 
-        // 4. BUSCAR DADOS DO FIRESTORE
+        // 4. FIREBASE LOGIC (Buscando registros)
         async function fetchRecords() {
-    const container = document.getElementById("recordsContainer");
-    const loading = document.getElementById("loading");
+            const container = document.getElementById("recordsContainer");
+            const loading = document.getElementById("loading");
 
-    loading.style.display = "block";
-    container.innerHTML = "";
+            loading.style.display = "block";
+            container.innerHTML = "";
 
-    try {
-        if (!currentUser) return;
+            try {
+                const snapshot = await db.collection("registros")
+                    .where("usuario", "==", currentUser)
+                    .get();
 
-        const snapshot = await db.collection("registros")
-            .where("usuario", "==", currentUser)
-            .get();
+                allRecords = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
 
-        allRecords = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
+                // Ordenar por data manualmente caso o índice do Firebase ainda não esteja pronto
+                allRecords.sort((a,b) => new Date(b.data) - new Date(a.data));
 
-        renderRecords(allRecords);
-        calculateTotal(allRecords);
+                renderRecords(allRecords);
+                calculateTotal(allRecords);
 
-    } catch (error) {
-        console.error(error);
-        container.innerHTML = "<p>Erro ao carregar dados</p>";
-    } finally {
-        loading.style.display = "none";
-    }
-}
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = "<p>Erro ao carregar dados</p>";
+            } finally {
+                loading.style.display = "none";
+            }
+        }
 
-        // 5. RENDERIZAR LISTA
         function renderRecords(data) {
             const container = document.getElementById("recordsContainer");
             container.innerHTML = "";
@@ -238,10 +307,9 @@ if (!currentUser) {
             }
 
             data.forEach(item => {
-                const statusClass = (item.status || "").toUpperCase() === "COMPENSADO"
-    ? "compensado"
-    : "a-compensar";
-                
+                const statusStr = (item.status || "").toUpperCase();
+                const statusClass = statusStr === "COMPENSADO" ? "compensado" : "a-compensar";
+                                
                 const html = `
                     <div class="record-item ${statusClass}">
                         <div class="date-col">${formatDate(item.data)}</div>
@@ -249,7 +317,7 @@ if (!currentUser) {
                         <div class="activity-col">${item.atividade}</div>
                         <div class="hours-col">${item.horas}h</div>
                         <div>
-                            <span class="status-badge ${statusClass}">${item.status}</span>
+                            <span class="status-badge ${statusClass}">${statusStr}</span>
                         </div>
                     </div>
                 `;
@@ -257,39 +325,31 @@ if (!currentUser) {
             });
         }
 
-        // 6. CÁLCULO DE HORAS (02:30 -> total acumulado)
         function calculateTotal(data) {
             let totalMinutes = 0;
-
             data.forEach(item => {
                 const [hrs, mins] = item.horas.split(':').map(Number);
                 totalMinutes += (hrs * 60) + mins;
             });
-
             const h = Math.floor(totalMinutes / 60);
             const m = totalMinutes % 60;
-            
             document.getElementById("totalDisplay").innerText = 
                 `${String(h).padStart(2, '0')}h${String(m).padStart(2, '0')}`;
         }
 
-        // 7. FILTROS
         function filterData(status, btn) {
-            // UI Update
             document.querySelectorAll('.filter-buttons .btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-
-            // Logic
             if (status === 'TODOS') {
                 renderRecords(allRecords);
             } else {
-                const filtered = allRecords.filter(r => r.status === status);
+                const filtered = allRecords.filter(r => (r.status || "").toUpperCase() === status);
                 renderRecords(filtered);
             }
         }
 
-        // AUX: Formatar Data (YYYY-MM-DD para DD/MM/YYYY)
         function formatDate(dateStr) {
+            if(!dateStr) return "-";
             const [year, month, day] = dateStr.split('-');
             return `${day}/${month}/${year}`;
         }
