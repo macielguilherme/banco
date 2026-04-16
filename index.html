@@ -167,6 +167,90 @@
             text-decoration: underline;
         }
 
+        /* Estilo do Modal de Sucesso */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.8); /* Fundo escuro transparente */
+    backdrop-filter: blur(4px);
+    display: none; /* Escondido por padrão */
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-card {
+    background: white;
+    padding: 40px;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    transform: translateY(0);
+    animation: slideUp 0.4s ease;
+}
+
+.modal-card i {
+    font-size: 50px;
+    color: #10b981; /* Verde sucesso */
+    margin-bottom: 20px;
+}
+
+.modal-card h2 {
+    color: var(--text-main);
+    margin-bottom: 15px;
+}
+
+.info-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 15px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.info-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 700;
+    display: block;
+}
+
+.info-value {
+    font-size: 15px;
+    color: var(--primary-color);
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.timer-bar {
+    height: 4px;
+    background: #e2e8f0;
+    width: 100%;
+    border-radius: 2px;
+    margin-top: 20px;
+    overflow: hidden;
+}
+
+.timer-progress {
+    height: 100%;
+    background: var(--primary-color);
+    width: 100%;
+    animation: shrink 4s linear forwards;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes shrink { from { width: 100%; } to { width: 0%; } }
+        
+
         /* Erro Mensagem */
         .error-msg {
             color: #ef4444;
@@ -229,6 +313,29 @@
         </div>
     </div>
 
+    <div id="success-modal" class="modal-overlay">
+    <div class="modal-card">
+        <i class="fas fa-check-circle"></i>
+        <h2>Conta Criada!</h2>
+        <p>Guarde seus dados de acesso:</p>
+        
+        <div class="info-box">
+            <span class="info-label">Usuário (E-mail)</span>
+            <span id="res-email" class="info-value"></span>
+            
+            <div style="margin-top: 10px;"></div>
+            
+            <span class="info-label">Senha Escolhida</span>
+            <span id="res-pass" class="info-value">••••••••</span>
+        </div>
+
+        <p style="font-size: 12px;">Redirecionando em instantes...</p>
+        <div class="timer-bar">
+            <div class="timer-progress"></div>
+        </div>
+    </div>
+</div>
+
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
@@ -276,31 +383,26 @@ function handleAuth(event, type) {
     event.preventDefault();
 
     const btn = event.target.querySelector('button');
+    const originalBtnText = btn.innerText;
     btn.innerText = "Processando...";
     btn.disabled = true;
 
-    const nome = type === 'login'
-        ? document.getElementById('login-user').value.trim()
-        : document.getElementById('signup-name').value.trim();
-
-    const senha = type === 'login'
-        ? document.getElementById('login-pass').value
-        : document.getElementById('signup-pass').value;
+    const nomeInput = type === 'login' ? document.getElementById('login-user') : document.getElementById('signup-name');
+    const senhaInput = type === 'login' ? document.getElementById('login-pass') : document.getElementById('signup-pass');
+    
+    const nome = nomeInput.value.trim();
+    const senha = senhaInput.value;
 
     if (!nome || !senha) {
         alert("Preencha todos os campos");
-        btn.innerText = type === 'login' ? "Entrar no Sistema" : "Criar conta agora";
+        btn.innerText = originalBtnText;
         btn.disabled = false;
         return;
     }
 
-    const emailFake = nome + "@sistema.com";
+    const emailFake = nome.replace(/\s+/g, '').toLowerCase() + "@sistema.com";
 
-    /* =========================
-       LOGIN
-    ========================= */
     if (type === 'login') {
-
         auth.signInWithEmailAndPassword(emailFake, senha)
             .then(() => {
                 localStorage.setItem("usuario", nome);
@@ -312,21 +414,35 @@ function handleAuth(event, type) {
                 btn.disabled = false;
             });
 
-    /* =========================
-       CADASTRO
-    ========================= */
     } else {
-
+        /* LÓGICA DE CADASTRO COM MODAL */
         auth.createUserWithEmailAndPassword(emailFake, senha)
             .then(() => {
-                alert("Conta criada com sucesso!");
-                toggleForm('login');
-                btn.innerText = "Criar conta agora";
+                // 1. Preenche os dados no modal
+                document.getElementById('res-email').innerText = emailFake;
+                document.getElementById('res-pass').innerText = senha;
+
+                // 2. Exibe o modal
+                const modal = document.getElementById('success-modal');
+                modal.style.display = 'flex';
+
+                // 3. Reseta o botão de cadastro
+                btn.innerText = originalBtnText;
                 btn.disabled = false;
+
+                // 4. Temporizador para fechar e redirecionar
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    toggleForm('login'); // Volta para o login
+                    
+                    // Limpa os campos de cadastro
+                    document.getElementById('signup-name').value = "";
+                    document.getElementById('signup-pass').value = "";
+                }, 4000); // 4 segundos de exibição
             })
             .catch((error) => {
-                alert(error.message);
-                btn.innerText = "Criar conta agora";
+                alert("Erro ao criar conta: " + error.message);
+                btn.innerText = originalBtnText;
                 btn.disabled = false;
             });
     }
