@@ -229,47 +229,108 @@
         </div>
     </div>
 
-    <script>
-        // Função para alternar entre Login e Cadastro
-        function toggleForm(formType) {
-            const loginBox = document.getElementById('login-box');
-            const signupBox = document.getElementById('signup-box');
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-            if (formType === 'signup') {
-                loginBox.classList.remove('active');
-                loginBox.classList.add('hidden');
-                
-                signupBox.classList.remove('hidden');
-                signupBox.classList.add('active');
-            } else {
-                signupBox.classList.remove('active');
-                signupBox.classList.add('hidden');
-                
-                loginBox.classList.remove('hidden');
-                loginBox.classList.add('active');
-            }
-        }
+<script>
+/* =========================
+   FIREBASE INIT
+========================= */
+firebase.initializeApp({
+    apiKey: "SUA_API_KEY",
+    authDomain: "banco-horas-52d36.firebaseapp.com",
+    projectId: "banco-horas-52d36",
+    storageBucket: "banco-horas-52d36.firebasestorage.app",
+    messagingSenderId: "392929219374",
+    appId: "1:392929219374:web:15636a9b27a73564a860bf"
+});
 
-        // Função para simular a autenticação
-        function handleAuth(event, type) {
-            event.preventDefault();
-            
-            const btn = event.target.querySelector('button');
-            const originalText = btn.innerText;
-            
-            btn.innerText = "Processando...";
-            btn.disabled = true;
-            btn.style.opacity = "0.7";
+const auth = firebase.auth();
 
-            setTimeout(() => {
-                if (type === 'login') {
-                    alert('Login realizado com sucesso! Redirecionando...');
-                } else {
-                    alert('Conta criada com sucesso! Bem-vindo à SOS Docs.');
-                }
+/* =========================
+   TOGGLE LOGIN / SIGNUP
+========================= */
+function toggleForm(formType) {
+    const loginBox = document.getElementById('login-box');
+    const signupBox = document.getElementById('signup-box');
+
+    if (formType === 'signup') {
+        loginBox.classList.remove('active');
+        loginBox.classList.add('hidden');
+
+        signupBox.classList.remove('hidden');
+        signupBox.classList.add('active');
+    } else {
+        signupBox.classList.remove('active');
+        signupBox.classList.add('hidden');
+
+        loginBox.classList.remove('hidden');
+        loginBox.classList.add('active');
+    }
+}
+
+/* =========================
+   LOGIN + CADASTRO REAL
+========================= */
+function handleAuth(event, type) {
+    event.preventDefault();
+
+    const btn = event.target.querySelector('button');
+    btn.innerText = "Processando...";
+    btn.disabled = true;
+
+    const nome = type === 'login'
+        ? document.getElementById('login-user').value.trim()
+        : document.getElementById('signup-name').value.trim();
+
+    const senha = type === 'login'
+        ? document.getElementById('login-pass').value
+        : document.getElementById('signup-pass').value;
+
+    if (!nome || !senha) {
+        alert("Preencha todos os campos");
+        btn.innerText = type === 'login' ? "Entrar no Sistema" : "Criar conta agora";
+        btn.disabled = false;
+        return;
+    }
+
+    const emailFake = nome + "@sistema.com";
+
+    /* =========================
+       LOGIN
+    ========================= */
+    if (type === 'login') {
+
+        auth.signInWithEmailAndPassword(emailFake, senha)
+            .then(() => {
+                localStorage.setItem("usuario", nome);
                 window.location.href = "dashboard.html";
-            }, 1500);
-        }
-    </script>
+            })
+            .catch(() => {
+                alert("Usuário ou senha inválidos");
+                btn.innerText = "Entrar no Sistema";
+                btn.disabled = false;
+            });
+
+    /* =========================
+       CADASTRO
+    ========================= */
+    } else {
+
+        auth.createUserWithEmailAndPassword(emailFake, senha)
+            .then(() => {
+                alert("Conta criada com sucesso!");
+                toggleForm('login');
+                btn.innerText = "Criar conta agora";
+                btn.disabled = false;
+            })
+            .catch((error) => {
+                alert(error.message);
+                btn.innerText = "Criar conta agora";
+                btn.disabled = false;
+            });
+    }
+}
+</script>
 </body>
 </html>
