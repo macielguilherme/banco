@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adicionar Hora Extra | SOS Docs</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #0F5E9B;
+            --primary-hover: #0a4a7a;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --bg-body: #f1f5f9;
+            --white: #ffffff;
+            --radius: 16px;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { 
+            background-color: var(--bg-body); 
+            color: var(--text-dark); 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--white);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .btn-back {
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+
+        .btn-back:hover { transform: translateX(-5px); }
+
+        /* Container do Formulário */
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        .form-card {
+            background: var(--white);
+            width: 100%;
+            max-width: 500px;
+            padding: 2.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .form-header { margin-bottom: 2rem; text-align: center; }
+        .form-header h1 { font-size: 1.5rem; color: var(--primary); margin-bottom: 8px; }
+        .form-header p { font-size: 0.9rem; color: var(--text-light); }
+
+        /* Estilo dos Grupos de Input */
+        .form-group { margin-bottom: 1.2rem; }
+        label { 
+            display: block; 
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            margin-bottom: 6px; 
+            color: var(--text-dark);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(15, 94, 155, 0.1);
+        }
+
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        /* Checkbox customizado para o Status */
+        .status-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #f1f5f9;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .status-container input { width: auto; cursor: pointer; }
+        .status-text { font-size: 0.9rem; font-weight: 600; color: var(--text-light); }
+
+        /* Botão Salvar */
+        .btn-save {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            transition: 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-save:hover { background-color: var(--primary-hover); transform: translateY(-2px); }
+        .btn-save:disabled { background-color: #cbd5e1; cursor: not-allowed; transform: none; }
+
+        /* Mobile */
+        @media (max-width: 480px) {
+            .row { grid-template-columns: 1fr; }
+            .form-card { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="dashboardpessoal.html" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+        <img src="https://sosdocs.com.br/wp-content/uploads/2025/01/logo-sos-docs-azul.svg" alt="SOS Docs" style="height: 30px;">
+    </header>
+
+    <main>
+        <div class="form-card">
+            <div class="form-header">
+                <h1>Nova Hora Extra</h1>
+                <p>Preencha os detalhes da atividade realizada</p>
+            </div>
+
+            <form id="addHoursForm">
+                <div class="form-group">
+                    <label>Projeto</label>
+                    <input type="text" id="projeto" placeholder="Ex: Manutenção Servidor" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Atividade / Observações</label>
+                    <textarea id="atividade" rows="3" placeholder="O que foi feito?"></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label>Data</label>
+                        <input type="date" id="data" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Horas (HH:mm)</label>
+                        <input type="time" id="horas" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Status do Lançamento</label>
+                    <label class="status-container">
+                        <input type="checkbox" id="statusCheck">
+                        <span class="status-text" id="statusLabel">A COMPENSAR</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-save" id="btnSubmit">
+                    <i class="fas fa-check"></i> Salvar Registro
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // 1. CONFIGURAÇÃO FIREBASE
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY",
+            authDomain: "SEU_PROJETO.firebaseapp.com",
+            projectId: "SEU_PROJETO_ID",
+            storageBucket: "SEU_PROJETO.appspot.com",
+            messagingSenderId: "SEU_SENDER_ID",
+            appId: "SEU_APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 2. VERIFICAÇÃO DE USUÁRIO
+        const currentUser = localStorage.getItem("usuario");
+        if (!currentUser) {
+            window.location.href = "login.html";
+        }
+
+        // 3. LÓGICA DO CHECKBOX (ABONO)
+        const statusCheck = document.getElementById('statusCheck');
+        const statusLabel = document.getElementById('statusLabel');
+
+        statusCheck.addEventListener('change', () => {
+            if (statusCheck.checked) {
+                statusLabel.innerText = "COMPENSADO / PAGO";
+                statusLabel.style.color = "#10b981";
+            } else {
+                statusLabel.innerText = "A COMPENSAR";
+                statusLabel.style.color = "#64748b";
+            }
+        });
+
+        // 4. SALVAR NO FIRESTORE
+        document.getElementById('addHoursForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Salvando...`;
+
+            const payload = {
+                usuario: currentUser,
+                projeto: document.getElementById('projeto').value,
+                atividade: document.getElementById('atividade').value,
+                data: document.getElementById('data').value,
+                horas: document.getElementById('horas').value,
+                status: statusCheck.checked ? "COMPENSADO" : "A COMPENSAR",
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                await db.collection("registros").add(payload);
+                alert("Hora extra registrada com sucesso!");
+                window.location.href = "dashboardpessoal.html";
+            } catch (error) {
+                console.error("Erro ao salvar:", error);
+                alert("Erro ao salvar. Tente novamente.");
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-check"></i> Salvar Registro`;
+            }
+        });
+
+        // Definir data de hoje como padrão
+        document.getElementById('data').valueAsDate = new Date();
+    </script>
+</body>
+</html>
