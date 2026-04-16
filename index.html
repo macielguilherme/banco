@@ -438,7 +438,7 @@ function handleAuth(event, type) {
                     // Limpa os campos de cadastro
                     document.getElementById('signup-name').value = "";
                     document.getElementById('signup-pass').value = "";
-                }, 5000); // 4 segundos de exibição
+                }, 4000); // 4 segundos de exibição
             })
             .catch((error) => {
     if (error.code === "auth/email-already-in-use") {
