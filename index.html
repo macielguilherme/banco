@@ -406,7 +406,7 @@ function handleAuth(event, type) {
         auth.signInWithEmailAndPassword(emailFake, senha)
             .then(() => {
                 localStorage.setItem("usuario", nome);
-                window.location.href = "dashboard.html";
+                window.location.href = "dashboardpessoal.html";
             })
             .catch(() => {
                 alert("Usuário ou senha inválidos");
