@@ -441,10 +441,16 @@ function handleAuth(event, type) {
                 }, 5000); // 4 segundos de exibição
             })
             .catch((error) => {
-                alert("Erro ao criar conta: " + error.message);
-                btn.innerText = originalBtnText;
-                btn.disabled = false;
-            });
+    if (error.code === "auth/email-already-in-use") {
+        alert("Esse usuário já existe. Faça login.");
+        toggleForm('login');
+    } else {
+        alert("Erro ao criar conta: " + error.message);
+    }
+
+    btn.innerText = originalBtnText;
+    btn.disabled = false;
+});
     }
 }
 </script>
