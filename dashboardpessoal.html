@@ -3,232 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Pessoal | Banco de Horas</title>
+    <title>Dashboard Pessoal | SOS Docs</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
             --primary: #0F5E9B;
-            --secondary: #f8fafc;
             --text-dark: #1e293b;
             --text-light: #64748b;
-            --success: #10b981;
-            --warning: #f59e0b;
             --white: #ffffff;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --sidebar-width: 260px;
+            --sidebar-width: 280px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: #f1f5f9; color: var(--text-dark); min-height: 100vh; overflow-x: hidden; }
+        body { background-color: #f1f5f9; overflow-x: hidden; }
 
-        /* --- SIDEBAR / MENU HAMBURGUER --- */
+        /* --- SIDEBAR DIREITA --- */
         .sidebar {
             position: fixed;
-            left: calc(-1 * var(--sidebar-width));
+            right: calc(-1 * var(--sidebar-width)); /* Escondida à direita */
             top: 0;
             width: var(--sidebar-width);
             height: 100%;
             background: var(--primary);
             color: white;
-            transition: 0.3s ease;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1000;
-            padding-top: 60px;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            padding-top: 80px;
+            box-shadow: -4px 0 15px rgba(0,0,0,0.1);
         }
 
-        .sidebar.active { left: 0; }
+        .sidebar.active { right: 0; }
 
         .sidebar-link {
             display: flex;
             align-items: center;
-            padding: 15px 25px;
+            padding: 18px 30px;
             color: rgba(255,255,255,0.8);
             text-decoration: none;
-            transition: 0.2s;
             cursor: pointer;
-            border-left: 4px solid transparent;
+            border-right: 5px solid transparent;
+            transition: 0.2s;
         }
 
-        .sidebar-link:hover, .sidebar-link.active {
+        .sidebar-link:hover {
             background: rgba(255,255,255,0.1);
             color: white;
-            border-left-color: white;
+            border-right-color: white;
         }
 
         .sidebar-link i { margin-right: 15px; width: 20px; text-align: center; }
 
-        /* Overlay para fechar o menu ao clicar fora */
         .overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.5);
             display: none;
             z-index: 999;
         }
         .overlay.active { display: block; }
 
-        /* --- HEADER --- */
+        /* --- HEADER AJUSTADO --- */
         header {
             background-color: var(--white);
-            padding: 1rem 5%;
+            padding: 0.8rem 5%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: var(--shadow);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             position: sticky;
             top: 0;
             z-index: 100;
         }
 
-        .menu-btn {
-            font-size: 1.5rem;
-            color: var(--primary);
-            cursor: pointer;
-            margin-right: 20px;
-        }
-
-        .logo-area { display: flex; align-items: center; }
         .logo-area img { height: 35px; }
 
-        .user-info { font-weight: 600; color: var(--primary); }
+        /* Agrupamento do Usuário + Hamburguer */
+        .user-menu-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
 
-        /* --- CONTEÚDO --- */
-        main { padding: 2rem 5%; max-width: 1200px; margin: 0 auto; }
+        .user-info {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.95rem;
+        }
+
+        .menu-btn {
+            font-size: 1.4rem;
+            color: var(--primary);
+            cursor: pointer;
+            padding: 5px;
+            transition: transform 0.2s;
+        }
+
+        .menu-btn:hover { transform: scale(1.1); }
+
+        /* --- CONTEÚDO PRINCIPAL --- */
+        main { padding: 2rem 5%; max-width: 1100px; margin: 0 auto; }
 
         .summary-card {
             background: linear-gradient(135deg, var(--primary), #1e40af);
             color: var(--white);
-            padding: 2rem;
-            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            border-radius: 20px;
             text-align: center;
             margin-bottom: 2rem;
-            box-shadow: 0 10px 15px -3px rgba(15, 94, 155, 0.3);
         }
 
-        .summary-card h2 { font-size: 1rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
-        .total-hours { font-size: 3.5rem; font-weight: 700; margin-top: 0.5rem; }
+        .total-hours { font-size: 3.5rem; font-weight: 700; }
 
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
+        /* Filtros */
+        .controls { display: flex; justify-content: space-between; margin-bottom: 1.5rem; gap: 10px; flex-wrap: wrap; }
+        .btn { padding: 0.7rem 1.2rem; border-radius: 10px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-weight: 600; }
+        .btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-        .filter-buttons { display: flex; gap: 0.5rem; }
-        
-        .btn {
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            background: var(--white);
-            cursor: pointer;
-            font-size: 0.875rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-
-        .btn:hover { background: #f8fafc; border-color: var(--primary); }
-        .btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
-
-        .records-list { display: grid; gap: 1rem; }
+        /* Cards da Lista */
         .record-item {
-            background: var(--white);
+            background: #fff;
             padding: 1.2rem;
-            border-radius: 12px;
+            border-radius: 14px;
             display: grid;
-            grid-template-columns: 1fr 2fr 1.5fr 1fr 1.2fr;
+            grid-template-columns: 1fr 2fr 1.5fr 1fr 1fr;
             align-items: center;
-            box-shadow: var(--shadow);
-            transition: transform 0.2s;
-            border-left: 5px solid transparent;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            border-left: 6px solid #e2e8f0;
         }
+        .record-item.compensado { border-left-color: #10b981; }
+        .record-item.a-compensar { border-left-color: #f59e0b; }
 
-        .record-item:hover { transform: translateY(-2px); }
-        .record-item.compensado { border-left-color: var(--success); }
-        .record-item.a-compensar { border-left-color: var(--warning); }
-
-        .date-col { font-weight: 600; color: var(--text-light); font-size: 0.9rem; }
-        .project-col { font-weight: 700; color: var(--primary); }
-        .activity-col { font-size: 0.9rem; color: var(--text-light); }
-        .hours-col { font-weight: 700; font-size: 1.1rem; }
-        
         .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-align: center;
-            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
         }
-
         .status-badge.compensado { background: #d1fae5; color: #065f46; }
         .status-badge.a-compensar { background: #fef3c7; color: #92400e; }
 
-        .loading { text-align: center; padding: 3rem; color: var(--text-light); }
-
         @media (max-width: 768px) {
             .record-item { grid-template-columns: 1fr 1fr; gap: 10px; }
-            .date-col, .status-badge { grid-column: span 1; }
-            .project-col, .activity-col { grid-column: span 2; }
-            .total-hours { font-size: 2.5rem; }
         }
     </style>
 </head>
 <body>
 
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+    
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-link active">
-            <i class="fas fa-chart-line"></i> Banco Geral
+        <div class="sidebar-link" onclick="toggleMenu()">
+            <i class="fas fa-th-large"></i> Banco Geral
         </div>
-        <a href="#" class="sidebar-link">
+        <a href="adicionar.html" class="sidebar-link">
             <i class="fas fa-plus-circle"></i> Adicionar Hora Extra
         </a>
-        <a href="#" class="sidebar-link" onclick="logout()">
-            <i class="fas fa-sign-out-alt"></i> Sair
-        </a>
+        <div style="margin-top: 50px; border-top: 1px solid rgba(255,255,255,0.1)">
+            <a href="#" class="sidebar-link" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Sair do Sistema
+            </a>
+        </div>
     </div>
 
     <header>
         <div class="logo-area">
-            <i class="fas fa-bars menu-btn" onclick="toggleMenu()"></i>
             <img src="https://sosdocs.com.br/wp-content/uploads/2025/01/logo-sos-docs-azul.svg" alt="SOS Docs">
         </div>
-        <div class="user-info" id="userDisplayName">
-            Olá, Usuário
+
+        <div class="user-menu-wrapper">
+            <span class="user-info" id="userDisplayName">Olá, Usuário</span>
+            <i class="fas fa-bars menu-btn" onclick="toggleMenu()"></i>
         </div>
     </header>
 
     <main>
         <section class="summary-card">
-            <h2>Total de Horas Acumuladas</h2>
+            <p style="text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; opacity: 0.8;">Saldo Total</p>
             <div class="total-hours" id="totalDisplay">00:00</div>
         </section>
 
         <section class="controls">
-            <div class="filter-buttons">
+            <div style="display: flex; gap: 8px;">
                 <button class="btn active" onclick="filterData('TODOS', this)">Todos</button>
                 <button class="btn" onclick="filterData('A COMPENSAR', this)">A Compensar</button>
                 <button class="btn" onclick="filterData('COMPENSADO', this)">Compensado</button>
             </div>
-            <button class="btn" onclick="fetchRecords()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+            <button class="btn" onclick="fetchRecords()"><i class="fas fa-sync-alt"></i></button>
         </section>
 
-        <div id="loading" class="loading">Carregando registros...</div>
+        <div id="loading" style="text-align: center; padding: 20px;">Carregando...</div>
         <div class="records-list" id="recordsContainer"></div>
     </main>
 
     <script>
-        // 1. CONFIGURAÇÃO FIREBASE
+        // CONFIGURAÇÃO FIREBASE
         const firebaseConfig = {
             apiKey: "SUA_API_KEY",
             authDomain: "SEU_PROJETO.firebaseapp.com",
@@ -237,18 +212,13 @@
             messagingSenderId: "SEU_SENDER_ID",
             appId: "SEU_APP_ID"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const currentUser = localStorage.getItem("usuario");
-        if (!currentUser) {
-            window.location.href = "login.html";
-        }
-
+        const currentUser = localStorage.getItem("usuario") || "Usuário";
         let allRecords = [];
 
-        // 2. FUNÇÕES DO MENU
+        // UI ACTIONS
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('active');
             document.getElementById('overlay').classList.toggle('active');
@@ -259,100 +229,61 @@
             window.location.href = "login.html";
         }
 
-        // 3. INICIALIZAÇÃO
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("userDisplayName").innerText = `Olá, ${currentUser}`;
-            fetchRecords();
-        });
-
-        // 4. FIREBASE LOGIC (Buscando registros)
+        // LOGICA DE DADOS
         async function fetchRecords() {
             const container = document.getElementById("recordsContainer");
             const loading = document.getElementById("loading");
-
             loading.style.display = "block";
-            container.innerHTML = "";
-
+            
             try {
-                const snapshot = await db.collection("registros")
-                    .where("usuario", "==", currentUser)
-                    .get();
-
-                allRecords = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-
-                // Ordenar por data manualmente caso o índice do Firebase ainda não esteja pronto
+                const snapshot = await db.collection("registros").where("usuario", "==", currentUser).get();
+                allRecords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 allRecords.sort((a,b) => new Date(b.data) - new Date(a.data));
-
+                
                 renderRecords(allRecords);
                 calculateTotal(allRecords);
-
-            } catch (error) {
-                console.error(error);
-                container.innerHTML = "<p>Erro ao carregar dados</p>";
-            } finally {
-                loading.style.display = "none";
-            }
+            } catch (e) { console.error(e); }
+            loading.style.display = "none";
         }
 
         function renderRecords(data) {
             const container = document.getElementById("recordsContainer");
-            container.innerHTML = "";
-
-            if (data.length === 0) {
-                container.innerHTML = "<p style='text-align:center; color:#64748b;'>Nenhum registro encontrado.</p>";
-                return;
-            }
-
+            container.innerHTML = data.length ? "" : "<p style='text-align:center'>Nenhum registro.</p>";
             data.forEach(item => {
-                const statusStr = (item.status || "").toUpperCase();
-                const statusClass = statusStr === "COMPENSADO" ? "compensado" : "a-compensar";
-                                
-                const html = `
-                    <div class="record-item ${statusClass}">
-                        <div class="date-col">${formatDate(item.data)}</div>
-                        <div class="project-col">${item.projeto}</div>
-                        <div class="activity-col">${item.atividade}</div>
-                        <div class="hours-col">${item.horas}h</div>
-                        <div>
-                            <span class="status-badge ${statusClass}">${statusStr}</span>
-                        </div>
-                    </div>
-                `;
-                container.innerHTML += html;
+                const status = (item.status || "A COMPENSAR").toUpperCase();
+                const sClass = status === "COMPENSADO" ? "compensado" : "a-compensar";
+                container.innerHTML += `
+                    <div class="record-item ${sClass}">
+                        <div class="date-col"><b>${formatDate(item.data)}</b></div>
+                        <div style="color:var(--primary)">${item.projeto}</div>
+                        <div style="font-size:0.85rem; color:#666">${item.atividade}</div>
+                        <div style="font-weight:700">${item.horas}h</div>
+                        <div><span class="status-badge ${sClass}">${status}</span></div>
+                    </div>`;
             });
         }
 
         function calculateTotal(data) {
-            let totalMinutes = 0;
+            let mins = 0;
             data.forEach(item => {
-                const [hrs, mins] = item.horas.split(':').map(Number);
-                totalMinutes += (hrs * 60) + mins;
+                const [h, m] = item.horas.split(':').map(Number);
+                mins += (h * 60) + m;
             });
-            const h = Math.floor(totalMinutes / 60);
-            const m = totalMinutes % 60;
-            document.getElementById("totalDisplay").innerText = 
-                `${String(h).padStart(2, '0')}h${String(m).padStart(2, '0')}`;
+            const finalH = Math.floor(mins / 60);
+            const finalM = mins % 60;
+            document.getElementById("totalDisplay").innerText = `${String(finalH).padStart(2, '0')}h${String(finalM).padStart(2, '0')}`;
         }
 
-        function filterData(status, btn) {
-            document.querySelectorAll('.filter-buttons .btn').forEach(b => b.classList.remove('active'));
+        function filterData(s, btn) {
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            if (status === 'TODOS') {
-                renderRecords(allRecords);
-            } else {
-                const filtered = allRecords.filter(r => (r.status || "").toUpperCase() === status);
-                renderRecords(filtered);
-            }
+            renderRecords(s === 'TODOS' ? allRecords : allRecords.filter(r => r.status.toUpperCase() === s));
         }
 
-        function formatDate(dateStr) {
-            if(!dateStr) return "-";
-            const [year, month, day] = dateStr.split('-');
-            return `${day}/${month}/${year}`;
-        }
+        function formatDate(d) { return d.split('-').reverse().join('/'); }
+
+        document.getElementById("userDisplayName").innerText = `Olá, ${currentUser}`;
+        fetchRecords();
     </script>
 </body>
 </html>
