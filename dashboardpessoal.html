@@ -1,1 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pessoal | Banco de Horas</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #0F5E9B; /* Azul SOS Docs */
+            --secondary: #f8fafc;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --white: #ffffff;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body { background-color: #f1f5f9; color: var(--text-dark); min-height: 100vh; }
+
+        /* Header */
+        header {
+            background-color: var(--white);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-area img { height: 40px; }
+        .user-info { font-weight: 600; color: var(--primary); }
+
+        /* Main Content */
+        main { padding: 2rem 5%; max-width: 1200px; margin: 0 auto; }
+
+        /* Card Destaque (Total de Horas) */
+        .summary-card {
+            background: linear-gradient(135deg, var(--primary), #1e40af);
+            color: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(15, 94, 155, 0.3);
+        }
+
+        .summary-card h2 { font-size: 1rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+        .total-hours { font-size: 3.5rem; font-weight: 700; margin-top: 0.5rem; }
+
+        /* Filtros e Controles */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .filter-buttons { display: flex; gap: 0.5rem; }
+        
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: var(--white);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn:hover { background: #f8fafc; border-color: var(--primary); }
+        .btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
+
+        /* Lista de Registros */
+        .records-list { display: grid; gap: 1rem; }
+
+        .record-item {
+            background: var(--white);
+            padding: 1.2rem;
+            border-radius: 12px;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1.5fr 1fr 1.2fr;
+            align-items: center;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s;
+            border-left: 5px solid transparent;
+        }
+
+        .record-item:hover { transform: translateY(-2px); }
+        .record-item.compensado { border-left-color: var(--success); }
+        .record-item.a-compensar { border-left-color: var(--warning); }
+
+        .date-col { font-weight: 600; color: var(--text-light); font-size: 0.9rem; }
+        .project-col { font-weight: 700; color: var(--primary); }
+        .activity-col { font-size: 0.9rem; color: var(--text-light); }
+        .hours-col { font-weight: 700; font-size: 1.1rem; }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .status-badge.compensado { background: #d1fae5; color: #065f46; }
+        .status-badge.a-compensar { background: #fef3c7; color: #92400e; }
+
+        /* Loading e Empty State */
+        .loading { text-align: center; padding: 3rem; color: var(--text-light); }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .record-item { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .date-col, .status-badge { grid-column: span 1; }
+            .project-col, .activity-col { grid-column: span 2; }
+            .total-hours { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area">
+            <img src="https://sosdocs.com.br/wp-content/uploads/2025/01/logo-sos-docs-azul.svg" alt="SOS Docs">
+        </div>
+        <div class="user-info" id="userDisplayName">
+            Olá, Usuário
+        </div>
+    </header>
+
+    <main>
+        <section class="summary-card">
+            <h2>Total de Horas Acumuladas</h2>
+            <div class="total-hours" id="totalDisplay">00:00</div>
+        </section>
+
+        <section class="controls">
+            <div class="filter-buttons">
+                <button class="btn active" onclick="filterData('TODOS', this)">Todos</button>
+                <button class="btn" onclick="filterData('A COMPENSAR', this)">A Compensar</button>
+                <button class="btn" onclick="filterData('COMPENSADO', this)">Compensado</button>
+            </div>
+            <button class="btn" onclick="fetchRecords()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+        </section>
+
+        <div id="loading" class="loading">Carregando registros...</div>
+        
+        <div class="records-list" id="recordsContainer">
+            </div>
+    </main>
+
+    <script>
+        // 1. CONFIGURAÇÃO FIREBASE (Substitua pelos seus dados)
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY",
+            authDomain: "SEU_PROJETO.firebaseapp.com",
+            projectId: "SEU_PROJETO_ID",
+            storageBucket: "SEU_PROJETO.appspot.com",
+            messagingSenderId: "SEU_SENDER_ID",
+            appId: "SEU_APP_ID"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 2. VARIÁVEIS GLOBAIS
+        const currentUser = localStorage.getItem("usuario");
+
+if (!currentUser) {
+    alert("Usuário não logado");
+    window.location.href = "login.html";
+}
+        let allRecords = [];
+
+        // 3. INICIALIZAÇÃO
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("userDisplayName").innerText = `Olá, ${currentUser}`;
+            fetchRecords();
+        });
+
+        // 4. BUSCAR DADOS DO FIRESTORE
+        async function fetchRecords() {
+    const container = document.getElementById("recordsContainer");
+    const loading = document.getElementById("loading");
+
+    loading.style.display = "block";
+    container.innerHTML = "";
+
+    try {
+        if (!currentUser) return;
+
+        const snapshot = await db.collection("registros")
+            .where("usuario", "==", currentUser)
+            .get();
+
+        allRecords = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        renderRecords(allRecords);
+        calculateTotal(allRecords);
+
+    } catch (error) {
+        console.error(error);
+        container.innerHTML = "<p>Erro ao carregar dados</p>";
+    } finally {
+        loading.style.display = "none";
+    }
+}
+
+        // 5. RENDERIZAR LISTA
+        function renderRecords(data) {
+            const container = document.getElementById("recordsContainer");
+            container.innerHTML = "";
+
+            if (data.length === 0) {
+                container.innerHTML = "<p style='text-align:center; color:#64748b;'>Nenhum registro encontrado.</p>";
+                return;
+            }
+
+            data.forEach(item => {
+                const statusClass = (item.status || "").toUpperCase() === "COMPENSADO"
+    ? "compensado"
+    : "a-compensar";
+                
+                const html = `
+                    <div class="record-item ${statusClass}">
+                        <div class="date-col">${formatDate(item.data)}</div>
+                        <div class="project-col">${item.projeto}</div>
+                        <div class="activity-col">${item.atividade}</div>
+                        <div class="hours-col">${item.horas}h</div>
+                        <div>
+                            <span class="status-badge ${statusClass}">${item.status}</span>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        // 6. CÁLCULO DE HORAS (02:30 -> total acumulado)
+        function calculateTotal(data) {
+            let totalMinutes = 0;
+
+            data.forEach(item => {
+                const [hrs, mins] = item.horas.split(':').map(Number);
+                totalMinutes += (hrs * 60) + mins;
+            });
+
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            
+            document.getElementById("totalDisplay").innerText = 
+                `${String(h).padStart(2, '0')}h${String(m).padStart(2, '0')}`;
+        }
+
+        // 7. FILTROS
+        function filterData(status, btn) {
+            // UI Update
+            document.querySelectorAll('.filter-buttons .btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Logic
+            if (status === 'TODOS') {
+                renderRecords(allRecords);
+            } else {
+                const filtered = allRecords.filter(r => r.status === status);
+                renderRecords(filtered);
+            }
+        }
+
+        // AUX: Formatar Data (YYYY-MM-DD para DD/MM/YYYY)
+        function formatDate(dateStr) {
+            const [year, month, day] = dateStr.split('-');
+            return `${day}/${month}/${year}`;
+        }
+    </script>
+</body>
+</html>
