@@ -405,7 +405,7 @@ function handleAuth(event, type) {
     if (type === 'login') {
         auth.signInWithEmailAndPassword(emailFake, senha)
             .then(() => {
-                localStorage.setItem("usuario", nome);
+                localStorage.setItem("usuario", emailFake);
                 window.location.href = "dashboardpessoal.html";
             })
             .catch(() => {
